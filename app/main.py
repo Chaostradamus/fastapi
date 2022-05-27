@@ -3,6 +3,9 @@ from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import time
 
 app = FastAPI()
 
@@ -13,7 +16,18 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool = True
-    rating: Optional[int] = None
+
+while True:
+    try:
+        conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres', password='postgres', cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
+        print("Database connection was succesful!")
+        break
+    # catch block exception will be stored as error
+    except Exception as error:
+        print('connection failed')
+        print("Error:", error)
+        time.sleep(2)
 
 
 my_posts = [{"title": "post 1 title", "content": "content of post1", "id": 1}, {
@@ -47,8 +61,11 @@ def root():
 
 # returns as a get request
 @app.get('/posts')
-def get_Posts():
-    return {'data': my_posts}
+def get_posts():
+    cursor.execute("""SELECT * FROM posts""")
+    posts = cursor.fetchall()
+    # print(posts)
+    return {'data': posts}
 
 #               decorater with post request and endpoint as /createposts
 
@@ -57,14 +74,10 @@ def get_Posts():
 # path operation function called createposts that takes the variable returns as dict which is set to the body contents
 # extracts body content
 def create_posts(post: Post):
-    # post pydantic model converted to a dictionary
-    post_dict = post.dict()
-# post dict targeting ID field set to some random #
-    post_dict['id'] = randrange(0, 1000000)
-    # append to array
-    my_posts.append(post_dict)
-    # returns key value pair payload[title] and payload[content] in postman
-    return {"data": post_dict}
+    cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title, post.content, post.published))
+    new_post = cursor.fetchone()
+    conn.commit()
+    return {"data": new_post}
 
 
 
@@ -75,9 +88,10 @@ def create_posts(post: Post):
 # shcema returns string for id that would need to be cast as an INT but fastapi helps us change it automatically up top 
 # response variable = Response object
 def get_post(id: int):
-   
-    # post = function call with id parameter passed in
-    post = find_post(id)
+    # use cursor object to run sql commands
+    cursor.execute("""SELECT * from posts where id = %s""", (str(id)))
+    post = cursor.fetchone()
+  
     if not post:
         # one liner for below
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
