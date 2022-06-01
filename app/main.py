@@ -1,13 +1,20 @@
 from typing import Optional
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from sqlalchemy.orm import Session
+from . import models
+from .database import engine, get_db
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+
 
 # schema for data
 
@@ -59,24 +66,45 @@ def find_index_post(id):
 def root():
     return {"message": "Welcome to Google foig"}
 
-# returns as a get request
+
+@app.get("/sqlalchemy")
+# pass in db and itll make it a dependency. must pass in to work with database in the path operation
+
+def test_posts(db: Session = Depends(get_db)):
+
+    posts = db.query(models.Post).all()
+    print(posts)
+    return {"data": posts}
+
+                            # returns as a get request
 @app.get('/posts')
-def get_posts():
-    cursor.execute("""SELECT * FROM posts""")
-    posts = cursor.fetchall()
-    # print(posts)
+def get_posts(db: Session = Depends(get_db)):
+    # sql commands raw code to get stuff
+    # cursor.execute("""SELECT * FROM posts""")
+    # posts = cursor.fetchall()
+    posts = db.query(models.Post).all()
     return {'data': posts}
 
 #               decorater with post request and endpoint as /createposts
+
+
 
 # status_code = whatever status code you want when function runs
 @app.post('/posts', status_code=status.HTTP_201_CREATED)
 # path operation function called createposts that takes the variable returns as dict which is set to the body contents
 # extracts body content
-def create_posts(post: Post):
-    cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title, post.content, post.published))
-    new_post = cursor.fetchone()
-    conn.commit()
+def create_posts(post: Post, db: Session = Depends(get_db)):
+#    sql code for creating posts
+    # cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, (post.title, post.content, post.published))
+    # new_post = cursor.fetchone()
+    # conn.commit()
+    
+    
+    new_post = models.Post(
+        **post.dict())
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
     return {"data": new_post}
 
 
