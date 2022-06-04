@@ -4,14 +4,17 @@ from typing import List
 from .. import models, schemas
 from ..database import get_db
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/posts",
+    tags=['Posts']
+)
 
 
 
     # returns as a get request
 
 
-@router.get('/posts', response_model=List[schemas.Post])
+@router.get('/', response_model=List[schemas.Post])
 def get_posts(db: Session = Depends(get_db)):
     # sql commands raw code to get stuff
     # cursor.execute("""SELECT * FROM posts""")
@@ -23,7 +26,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 # status_code = whatever status code you want when function runs
-@router.post('/posts', status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
 # path operation function called createposts that takes the variable returns as dict which is set to the body contents
 # extracts body content
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
@@ -42,7 +45,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
 #                       get post request by ID (path parameter)
 
-@router.get('/posts/{id}', response_model=schemas.Post)
+@router.get('/{id}', response_model=schemas.Post)
 # fast api auto validates if id can be int and then converts
 # shcema returns string for id that would need to be cast as an INT but fastapi helps us change it automatically up top
 # response variable = Response object
@@ -66,7 +69,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
 #               delete posts
 
-@router.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db)):
     # cursor.execute("""DELETE FROM posts WHERE id = %s returning *""", (str(id),))
     # deleted_post = cursor.fetchone()
@@ -87,7 +90,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     # post is type Post so it comes in with correct schema
 
 
-@router.put("/posts/{id}", response_model=schemas.Post)
+@router.put("/{id}", response_model=schemas.Post)
 def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends(get_db)):
     # cursor.execute("""UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING *""",
     #  (post.title, post.content, post.published, str(id)))
