@@ -1,59 +1,17 @@
-from typing import Optional, List
-from fastapi import FastAPI, Response, status, HTTPException, Depends
-from fastapi.params import Body
-from pydantic import BaseModel
+from fastapi import FastAPI
 
-from random import randrange
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
-from sqlalchemy.orm import Session
-from sqlalchemy.sql.functions import mode
-from . import models, schemas, utils
-from .database import engine, get_db
-
+from . import models
+from .database import engine
 from .routers import post, user, auth
+from .config import settings
+
+
+
 
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-
-
-
-while True:
-    try:
-        conn = psycopg2.connect(host='localhost', database='fastapi', user='postgres', password='postgres', cursor_factory=RealDictCursor)
-        cursor = conn.cursor()
-        print("Database connection was succesful!")
-        break
-    # catch block exception will be stored as error
-    except Exception as error:
-        print('connection failed')
-        print("Error:", error)
-        time.sleep(2)
-
-
-my_posts = [{"title": "post 1 title", "content": "content of post1", "id": 1}, {
-    "title": "favorite foods", "content": "I like pizza", "id": 2
-}]
-
-
-#                           fastapi looks at all paths and  looks for first match top to bottom
-
-
-
-#                   loop through my_posts and if p's id matches passed in id, return it to function call
-def find_post(id):
-    for p in my_posts:
-        if p["id"] == id:
-            return p
-
-def find_index_post(id):
-    for i, p in enumerate(my_posts):
-        if p['id'] == id:
-            return i
 
 app.include_router(post.router)
 app.include_router(user.router)
@@ -62,6 +20,15 @@ app.include_router(auth.router)
 @app.get("/")
 def root():
     return {"message": "Welcome to Google foig"}
+
+
+
+
+
+
+
+
+
 
 
 
