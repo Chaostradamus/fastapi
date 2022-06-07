@@ -53,7 +53,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db), curren
 
 #                       get post request by ID (path parameter)
 
-@router.get('/{id}', response_model=schemas.Post)
+@router.get('/{id}', response_model=schemas.PostOut)
 # fast api auto validates if id can be int and then converts
 # shcema returns string for id that would need to be cast as an INT but fastapi helps us change it automatically up top
 # response variable = Response object
@@ -62,7 +62,10 @@ def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends
     # cursor.execute("""SELECT * from posts where id = %s""", (str(id)))
     # post = cursor.fetchone()
 
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    # post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    post = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(
+        models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.id == id).first()
 
     if not post:
         # one liner for below
